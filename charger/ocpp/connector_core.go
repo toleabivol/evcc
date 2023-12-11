@@ -39,6 +39,14 @@ func (conn *Connector) StatusNotification(request *core.StatusNotificationReques
 	return new(core.StatusNotificationConfirmation), nil
 }
 
+func getSampleKey(s types.SampledValue) types.Measurand {
+	if s.Phase != "" {
+		return s.Measurand + types.Measurand("@"+string(s.Phase))
+	}
+
+	return s.Measurand
+}
+
 func (conn *Connector) MeterValues(request *core.MeterValuesRequest) (*core.MeterValuesConfirmation, error) {
 	conn.mu.Lock()
 	defer conn.mu.Unlock()
@@ -61,23 +69,15 @@ func (conn *Connector) MeterValues(request *core.MeterValuesRequest) (*core.Mete
 	return new(core.MeterValuesConfirmation), nil
 }
 
-func getSampleKey(s types.SampledValue) string {
-	if s.Phase != "" {
-		return string(s.Measurand) + "@" + string(s.Phase)
-	}
-
-	return string(s.Measurand)
-}
-
 func (conn *Connector) StartTransaction(request *core.StartTransactionRequest) (*core.StartTransactionConfirmation, error) {
 	conn.mu.Lock()
 	defer conn.mu.Unlock()
 
 	// expired request
-	if request.Timestamp != nil && conn.clock.Since(request.Timestamp.Time) < transactionExpiry {
+	if request.Timestamp != nil && conn.clock.Since(request.Timestamp.Time) > transactionExpiry {
 		res := &core.StartTransactionConfirmation{
 			IdTagInfo: &types.IdTagInfo{
-				Status: types.AuthorizationStatusExpired,
+				Status: types.AuthorizationStatusExpired, // reject
 			},
 		}
 
@@ -97,6 +97,26 @@ func (conn *Connector) StartTransaction(request *core.StartTransactionRequest) (
 	return res, nil
 }
 
+func (conn *Connector) assumeMeterStopped() {
+	conn.meterUpdated = conn.clock.Now()
+
+	if _, ok := conn.measurements[types.MeasurandPowerActiveImport]; ok {
+		conn.measurements[types.MeasurandPowerActiveImport] = types.SampledValue{
+			Value: "0",
+			Unit:  types.UnitOfMeasureW,
+		}
+	}
+
+	for phase := 1; phase <= 3; phase++ {
+		if _, ok := conn.measurements[getPhaseKey(types.MeasurandCurrentImport, phase)]; ok {
+			conn.measurements[getPhaseKey(types.MeasurandCurrentImport, phase)] = types.SampledValue{
+				Value: "0",
+				Unit:  types.UnitOfMeasureA,
+			}
+		}
+	}
+}
+
 func (conn *Connector) StopTransaction(request *core.StopTransactionRequest) (*core.StopTransactionConfirmation, error) {
 	conn.mu.Lock()
 	defer conn.mu.Unlock()
@@ -105,7 +125,7 @@ func (conn *Connector) StopTransaction(request *core.StopTransactionRequest) (*c
 	if request.Timestamp != nil && conn.clock.Since(request.Timestamp.Time) > transactionExpiry {
 		res := &core.StopTransactionConfirmation{
 			IdTagInfo: &types.IdTagInfo{
-				Status: types.AuthorizationStatusExpired, // accept
+				Status: types.AuthorizationStatusExpired, // reject
 			},
 		}
 
@@ -119,6 +139,8 @@ func (conn *Connector) StopTransaction(request *core.StopTransactionRequest) (*c
 			Status: types.AuthorizationStatusAccepted, // accept
 		},
 	}
+
+	conn.assumeMeterStopped()
 
 	return res, nil
 }

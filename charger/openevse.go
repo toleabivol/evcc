@@ -29,7 +29,7 @@ func init() {
 	registry.Add("openevse", NewOpenEVSEFromConfig)
 }
 
-// go:generate go run ../cmd/tools/decorate.go -f decorateOpenEVSE -b ""*OpenEVSE" -r api.Charger -t "api.PhaseSwitcher,Phases1p3p,func(int) error"
+//go:generate go run ../cmd/tools/decorate.go -f decorateOpenEVSE -b *OpenEVSE -r api.Charger -t "api.PhaseSwitcher,Phases1p3p,func(int) error"
 
 // NewOpenEVSEFromConfig creates an OpenEVSE charger from generic config
 func NewOpenEVSEFromConfig(other map[string]interface{}) (api.Charger, error) {
@@ -94,15 +94,18 @@ func (c *OpenEVSE) setOverride() error {
 	uri := fmt.Sprintf("%s/override", c.uri)
 
 	if err := c.GetJSON(uri, &data); err != nil {
-		return err
+		if err.Error() != "unexpected status: 404 (Not Found)" {
+			return err
+		}
 	}
 
 	state := openevse.Disabled
 	if c.enabled {
 		state = openevse.Enabled
 	}
-	data.State = &state
-	data.MaxCurrent = &c.current
+
+	data.State = state
+	data.MaxCurrent = c.current
 
 	req, err := request.New(http.MethodPost, uri, request.MarshalJSON(data), request.JSONEncoding)
 	if err == nil {
@@ -151,11 +154,11 @@ func (c *OpenEVSE) Status() (api.ChargeStatus, error) {
 		255: "disabled"
 	*/
 
-	switch state := *res.State; state {
+	switch state := res.State; state {
 	case 1:
 		return api.StatusA, err
 	case 2, 254, 255:
-		if *res.Vehicle == 1 {
+		if res.Vehicle == 1 {
 			return api.StatusB, err
 		}
 		return api.StatusA, err
@@ -173,7 +176,7 @@ func (c *OpenEVSE) Status() (api.ChargeStatus, error) {
 // Enabled implements the api.Charger interface
 func (c *OpenEVSE) Enabled() (bool, error) {
 	res, err := c.statusG.Get()
-	return *res.Status == openevse.Enabled, err
+	return res.Status == openevse.Enabled, err
 }
 
 // Enable implements the api.Charger interface
@@ -197,7 +200,7 @@ func (c *OpenEVSE) ChargedEnergy() (float64, error) {
 		return 0, err
 	}
 
-	return *res.SessionEnergy / 1e3, err
+	return res.SessionEnergy / 1e3, err
 }
 
 var _ api.ChargeTimer = (*OpenEVSE)(nil)
@@ -207,7 +210,8 @@ func (c *OpenEVSE) ChargingTime() (time.Duration, error) {
 	if err != nil {
 		return 0, err
 	}
-	return time.Duration(*res.SessionElapsed) * time.Second, err
+
+	return time.Duration(res.SessionElapsed) * time.Second, err
 }
 
 var _ api.MeterEnergy = (*OpenEVSE)(nil)
@@ -219,7 +223,7 @@ func (c *OpenEVSE) TotalEnergy() (float64, error) {
 		return 0, err
 	}
 
-	return *res.TotalEnergy, err
+	return res.TotalEnergy, err
 }
 
 var _ api.Meter = (*OpenEVSE)(nil)
@@ -229,7 +233,8 @@ func (c *OpenEVSE) CurrentPower() (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return *res.Power, err
+
+	return res.Power, err
 }
 
 // phases1p3p implements the api.ChargePhases interface

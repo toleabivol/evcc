@@ -70,7 +70,7 @@
 						/>
 						<EnergyflowEntry
 							v-if="batteryConfigured"
-							:name="$t('main.energyflow.batteryDischarge')"
+							:name="batteryDischargeLabel"
 							icon="battery"
 							:power="batteryDischarge"
 							:powerInKw="powerInKw"
@@ -134,7 +134,7 @@
 						/>
 						<EnergyflowEntry
 							v-if="batteryConfigured"
-							:name="$t('main.energyflow.batteryCharge')"
+							:name="batteryChargeLabel"
 							icon="battery"
 							:power="batteryCharge"
 							:powerInKw="powerInKw"
@@ -171,7 +171,7 @@ import GridSettingsModal from "../GridSettingsModal.vue";
 import formatter from "../../mixins/formatter";
 import AnimatedNumber from "../AnimatedNumber.vue";
 import settings from "../../settings";
-import { CO2_TYPE, PRICE_DYNAMIC_TYPE } from "../../units";
+import { CO2_TYPE, PRICE_DYNAMIC_TYPE, PRICE_FORECAST_TYPE } from "../../units";
 import collector from "../../mixins/collector";
 import BatterySettingsModal from "../BatterySettingsModal.vue";
 
@@ -197,6 +197,8 @@ export default {
 		battery: { type: Array },
 		batteryPower: { type: Number, default: 0 },
 		batterySoc: { type: Number, default: 0 },
+		batteryDischargeControl: { type: Boolean },
+		batteryMode: { type: String },
 		tariffGrid: { type: Number },
 		tariffFeedIn: { type: Number },
 		tariffCo2: { type: Number },
@@ -216,7 +218,7 @@ export default {
 	},
 	computed: {
 		smartCostAvailable: function () {
-			return [CO2_TYPE, PRICE_DYNAMIC_TYPE].includes(this.smartCostType);
+			return [CO2_TYPE, PRICE_DYNAMIC_TYPE, PRICE_FORECAST_TYPE].includes(this.smartCostType);
 		},
 		gridImport: function () {
 			return Math.max(0, this.gridPower);
@@ -229,6 +231,15 @@ export default {
 		},
 		batteryCharge: function () {
 			return Math.abs(Math.min(0, this.batteryPower) * -1);
+		},
+		batteryChargeLabel: function () {
+			return this.$t(`main.energyflow.battery${this.batteryHold ? "Hold" : "Charge"}`);
+		},
+		batteryDischargeLabel: function () {
+			return this.$t(`main.energyflow.battery${this.batteryHold ? "Hold" : "Discharge"}`);
+		},
+		batteryHold: function () {
+			return this.batteryMode === "hold";
 		},
 		selfConsumption: function () {
 			const ownPower = this.batteryDischarge + this.pvProduction;

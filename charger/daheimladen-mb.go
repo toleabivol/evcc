@@ -203,9 +203,10 @@ func (wb *DaheimLadenMB) MaxCurrent(current int64) error {
 		return fmt.Errorf("invalid current %d", current)
 	}
 
-	err := wb.setCurrent(wb.curr)
+	curr := uint16(current * 10)
+	err := wb.setCurrent(curr)
 	if err == nil {
-		wb.curr = uint16(current * 10)
+		wb.curr = curr
 	}
 
 	return err
@@ -243,7 +244,7 @@ func (wb *DaheimLadenMB) getPhaseValues(reg uint16) (float64, float64, float64, 
 	}
 
 	var res [3]float64
-	for i := 0; i < 3; i++ {
+	for i := range res {
 		res[i] = float64(binary.BigEndian.Uint32(b[4*i:])) / 10
 	}
 

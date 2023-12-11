@@ -95,30 +95,60 @@ func (suite *ocppTestSuite) handleTrigger(cp ocpp16.ChargePoint, connectorId int
 func (suite *ocppTestSuite) TestConnect() {
 	// 1st charge point- remote
 	cp1 := suite.startChargePoint("test-1", 1)
-	suite.NoError(cp1.Start(ocppTestUrl))
-	suite.True(cp1.IsConnected())
+	suite.Require().NoError(cp1.Start(ocppTestUrl))
+	suite.Require().True(cp1.IsConnected())
 
 	// 1st charge point- local
 	c1, err := NewOCPP("test-1", 1, "", "", 0, false, false, ocppTestConnectTimeout, ocppTestTimeout, "A")
 	suite.Require().NoError(err)
 
+	// status and meter values
 	{
 		suite.clock.Add(ocppTestTimeout)
 		c1.conn.TestClock(suite.clock)
 
 		// status
 		_, err = c1.Status()
-		suite.NoError(err)
+		suite.Require().NoError(err)
 
 		// power
 		f, err := c1.currentPower()
-		suite.NoError(err)
+		suite.Require().NoError(err)
 		suite.Equal(1e3, f)
 
 		// energy
 		f, err = c1.totalEnergy()
-		suite.NoError(err)
+		suite.Require().NoError(err)
 		suite.Equal(1.2, f)
+	}
+
+	// takeover
+	{
+		expectedTxn := 99
+
+		_, err := cp1.StopTransaction(0, types.NewDateTime(suite.clock.Now()), expectedTxn)
+		suite.Require().Error(err)
+
+		_, err = cp1.MeterValues(1, []types.MeterValue{
+			{
+				Timestamp: types.NewDateTime(suite.clock.Now()),
+				SampledValue: []types.SampledValue{
+					{Measurand: types.MeasurandPowerActiveImport, Value: "1000"},
+				},
+			},
+		}, func(request *core.MeterValuesRequest) {
+			request.TransactionId = &expectedTxn
+		})
+		suite.Require().NoError(err)
+
+		conn1 := c1.Connector()
+		txnId, err := conn1.TransactionID()
+		suite.Require().NoError(err)
+		suite.Equal(expectedTxn, txnId)
+
+		res, err := cp1.StopTransaction(0, types.NewDateTime(suite.clock.Now()), expectedTxn)
+		suite.Require().NoError(err)
+		suite.Equal(types.AuthorizationStatusAccepted, res.IdTagInfo.Status)
 	}
 
 	// 2nd charge point - remote
@@ -136,7 +166,7 @@ func (suite *ocppTestSuite) TestConnect() {
 
 		// status
 		_, err = c2.Status()
-		suite.NoError(err)
+		suite.Require().NoError(err)
 	}
 
 	// error on unconfigured 2nd charge point

@@ -20,9 +20,10 @@
 			<Loadpoints
 				class="mt-1 mt-sm-2 flex-grow-1"
 				:loadpoints="loadpoints"
-				:vehicles="vehicles"
+				:vehicles="vehicleList"
 				:smartCostLimit="smartCostLimit"
 				:smartCostType="smartCostType"
+				:smartCostActive="smartCostActive"
 				:tariffGrid="tariffGrid"
 				:tariffCo2="tariffCo2"
 				:currency="currency"
@@ -68,24 +69,20 @@ export default {
 		batteryConfigured: Boolean,
 		batteryPower: Number,
 		batterySoc: Number,
+		batteryDischargeControl: Boolean,
+		batteryMode: String,
 		battery: Array,
 		gridCurrents: Array,
 		prioritySoc: Number,
 		bufferSoc: Number,
 		bufferStartSoc: Number,
 		siteTitle: String,
-		vehicles: Array,
+		vehicles: Object,
 
 		auth: Object,
 
 		currency: String,
-		savingsAmount: Number,
-		savingsEffectivePrice: Number,
-		savingsGridCharged: Number,
-		savingsSelfConsumptionCharged: Number,
-		savingsSelfConsumptionPercent: Number,
-		savingsSince: String,
-		savingsTotalCharged: Number,
+		statistics: Object,
 		tariffFeedIn: Number,
 		tariffGrid: Number,
 		tariffCo2: Number,
@@ -103,6 +100,7 @@ export default {
 		sponsorTokenExpires: Number,
 		smartCostLimit: Number,
 		smartCostType: String,
+		smartCostActive: Boolean,
 	},
 	computed: {
 		energyflow: function () {
@@ -118,6 +116,10 @@ export default {
 				const power = lp.chargePower || 0;
 				return { icon, charging, power };
 			});
+		},
+		vehicleList: function () {
+			const vehicles = this.vehicles || {};
+			return Object.entries(vehicles).map(([name, vehicle]) => ({ name, ...vehicle }));
 		},
 		topNavigation: function () {
 			const vehicleLogins = this.auth ? this.auth.vehicles : {};
@@ -140,15 +142,9 @@ export default {
 				},
 				sponsor: this.sponsor,
 				savings: {
-					since: this.savingsSince,
-					totalCharged: this.savingsTotalCharged,
-					gridCharged: this.savingsGridCharged,
-					selfConsumptionCharged: this.savingsSelfConsumptionCharged,
-					amount: this.savingsAmount,
-					effectivePrice: this.savingsEffectivePrice,
-					selfConsumptionPercent: this.savingsSelfConsumptionPercent,
-					gridPrice: this.tariffGrid,
-					feedInPrice: this.tariffFeedIn,
+					statistics: this.statistics,
+					co2Configured: this.tariffCo2 !== undefined,
+					priceConfigured: this.tariffGrid !== undefined,
 					currency: this.currency,
 				},
 			};

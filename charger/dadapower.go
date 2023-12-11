@@ -196,8 +196,8 @@ func (wb *Dadapower) Currents() (float64, float64, float64, error) {
 	}
 
 	var res [3]float64
-	for i := 0; i < 3; i++ {
-		res[i] = float64(binary.BigEndian.Uint16(b)) / 100
+	for i := range res {
+		res[i] = float64(binary.BigEndian.Uint16(b[2*i:])) / 100
 	}
 
 	return res[0], res[1], res[2], nil
@@ -207,8 +207,30 @@ var _ api.PhaseSwitcher = (*Dadapower)(nil)
 
 // Phases1p3p implements the api.PhaseSwitcher interface
 func (wb *Dadapower) Phases1p3p(phases int) error {
-	_, err := wb.conn.WriteSingleRegister(dadapowerRegActivePhases+wb.regOffset, uint16(phases))
-	return err
+	enabled, err := wb.Enabled()
+	if err != nil {
+		return err
+	}
+
+	if enabled {
+		if err := wb.Enable(false); err != nil {
+			return err
+		}
+		time.Sleep(5 * time.Second)
+	}
+
+	if _, err := wb.conn.WriteSingleRegister(dadapowerRegActivePhases+wb.regOffset, uint16(phases)); err != nil {
+		return err
+	}
+
+	if enabled {
+		time.Sleep(2 * time.Second)
+		if err := wb.Enable(true); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 var _ api.Identifier = (*Dadapower)(nil)

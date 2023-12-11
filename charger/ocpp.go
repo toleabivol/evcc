@@ -1,10 +1,11 @@
 package charger
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"math"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -16,7 +17,6 @@ import (
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/core"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/smartcharging"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/types"
-	"github.com/samber/lo"
 )
 
 // OCPP charger implementation
@@ -99,7 +99,7 @@ func NewOCPPFromConfig(other map[string]interface{}) (api.Charger, error) {
 	return decorateOCPP(c, powerG, totalEnergyG, currentsG, phasesS), nil
 }
 
-// go:generate go run ../cmd/tools/decorate.go -f decorateOCPP -b *OCPP -r api.Charger -t "api.Meter,CurrentPower,func() (float64, error)" -t "api.MeterEnergy,TotalEnergy,func() (float64, error)" -t "api.PhaseCurrents,Currents,func() (float64, float64, float64, error)" -t "api.PhaseSwitcher,Phases1p3p,func(int) error"
+//go:generate go run ../cmd/tools/decorate.go -f decorateOCPP -b *OCPP -r api.Charger -t "api.Meter,CurrentPower,func() (float64, error)" -t "api.MeterEnergy,TotalEnergy,func() (float64, error)" -t "api.PhaseCurrents,Currents,func() (float64, float64, float64, error)" -t "api.PhaseSwitcher,Phases1p3p,func(int) error"
 
 // NewOCPP creates OCPP charger
 func NewOCPP(id string, connector int, idtag string,
@@ -178,12 +178,12 @@ func NewOCPP(id string, connector int, idtag string,
 			if err == nil {
 				// log unsupported configuration keys
 				if len(resp.UnknownKey) > 0 {
-					c.log.ERROR.Printf("unsupported keys: %v", sort.StringSlice(resp.UnknownKey))
+					c.log.ERROR.Printf("unsupported keys: %v", resp.UnknownKey)
 				}
 
 				// sort configuration keys for printing
-				sort.Slice(resp.ConfigurationKey, func(i, j int) bool {
-					return resp.ConfigurationKey[i].Key < resp.ConfigurationKey[j].Key
+				slices.SortFunc(resp.ConfigurationKey, func(i, j core.ConfigurationKey) int {
+					return cmp.Compare(i.Key, j.Key)
 				})
 
 				rw := map[bool]string{false: "r/w", true: "r/o"}
@@ -274,9 +274,14 @@ func NewOCPP(id string, connector int, idtag string,
 	return c, conn.Initialized()
 }
 
+// Connector returns the connector instance
+func (c *OCPP) Connector() *ocpp.Connector {
+	return c.conn
+}
+
 // hasMeasurement checks if meterValuesSample contains given measurement
 func (c *OCPP) hasMeasurement(val types.Measurand) bool {
-	return lo.Contains(strings.Split(c.meterValuesSample, ","), string(val))
+	return slices.Contains(strings.Split(c.meterValuesSample, ","), string(val))
 }
 
 // configure updates CP configuration
@@ -330,7 +335,8 @@ func (c *OCPP) Enable(enable bool) (err error) {
 
 	if enable {
 		if txn > 0 {
-			return errors.New("cannot enable: transaction already running")
+			// we have the transaction id, treat as enabled
+			return nil
 		}
 
 		err = ocpp.Instance().RemoteStartTransaction(c.conn.ChargePoint().ID(), func(resp *core.RemoteStartTransactionConfirmation, err error) {
