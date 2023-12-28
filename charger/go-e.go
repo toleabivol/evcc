@@ -25,7 +25,7 @@ import (
 	"github.com/evcc-io/evcc/api"
 	goe "github.com/evcc-io/evcc/charger/go-e"
 	"github.com/evcc-io/evcc/util"
-	"github.com/evcc-io/evcc/util/sponsor"
+	//"github.com/evcc-io/evcc/util/sponsor"
 )
 
 // https://go-e.co/app/api.pdf
@@ -79,9 +79,9 @@ func NewGoE(uri, token string, cache time.Duration) (api.Charger, error) {
 		c.api = goe.NewLocal(log, util.DefaultScheme(uri, "http"), cache)
 	}
 
-	if !sponsor.IsAuthorized() {
-		return nil, api.ErrSponsorRequired
-	}
+	//if !sponsor.IsAuthorized() {
+	//	return nil, api.ErrSponsorRequired
+	//}
 
 	if c.api.IsV2() {
 		return decorateGoE(c, c.phases1p3p), nil

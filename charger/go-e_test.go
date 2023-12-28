@@ -36,7 +36,7 @@ func TestGoEV1(t *testing.T) {
 	h := &handler{}
 	srv := httptest.NewServer(h)
 
-	sponsor.Subject = "foo"
+	//sponsor.Subject = "foo"
 
 	wb, err := NewGoE(srv.URL, "", 0)
 	if err != nil {

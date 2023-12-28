@@ -20,7 +20,7 @@ requirements:
 
       The “simulate unplugging” option should be activated in the Go-E app ("Car" menu item).
   uri: https://docs.evcc.io/docs/devices/chargers#go-echarger
-  evcc: ["sponsorship"]
+#  evcc: ["sponsorship"]
 params:
   - name: host
 render: |
