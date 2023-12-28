@@ -106,6 +106,12 @@ func (m *MQTT) publishComplex(topic string, retained bool, payload interface{}) 
 			}
 		}
 
+	case reflect.Pointer:
+		if reflect.ValueOf(payload).IsNil() {
+			payload = nil
+		}
+		fallthrough
+
 	default:
 		m.publishSingleValue(topic, retained, payload)
 	}
@@ -281,7 +287,8 @@ func (m *MQTT) listenLoadpointSetters(topic string, site site.API, lp loadpoint.
 	}
 	if err == nil {
 		err = m.Handler.ListenSetter(topic+"/vehicle", func(payload string) error {
-			if payload == "" {
+			// https://github.com/evcc-io/evcc/issues/11184 empty payload is swallowed by listener
+			if payload == "-" {
 				lp.SetVehicle(nil)
 				return nil
 			}
