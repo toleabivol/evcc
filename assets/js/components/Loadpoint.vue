@@ -42,7 +42,7 @@
 			}}
 		</div>
 
-		<div class="details d-flex align-items-start mb-3">
+		<div class="details d-flex align-items-start mb-2">
 			<div>
 				<div class="d-flex align-items-center">
 					<LabelAndValue
@@ -170,7 +170,8 @@ export default {
 		phases: Number,
 		phasesConfigured: Number,
 		phasesActive: Number,
-		phases1p3p: Boolean,
+		chargerPhases1p3p: Boolean,
+		chargerPhysicalPhases: Number,
 		minCurrent: Number,
 		maxCurrent: Number,
 		chargeCurrent: Number,
@@ -181,21 +182,19 @@ export default {
 		phaseRemaining: Number,
 		pvRemaining: Number,
 		pvAction: String,
-		guardRemaining: Number,
-		guardAction: String,
 		smartCostLimit: Number,
 		smartCostType: String,
 		smartCostActive: Boolean,
 		tariffGrid: Number,
 		tariffCo2: Number,
 		currency: String,
+		multipleLoadpoints: Boolean,
 	},
 	data() {
 		return {
 			tickerHandler: null,
 			phaseRemainingInterpolated: this.phaseRemaining,
 			pvRemainingInterpolated: this.pvRemaining,
-			guardRemainingInterpolated: this.guardRemaining,
 			chargeDurationInterpolated: this.chargeDuration,
 			chargeRemainingDurationInterpolated: this.chargeRemainingDuration,
 		};
@@ -237,6 +236,11 @@ export default {
 		vehicleHasSoc: function () {
 			return this.vehicleKnown && !this.vehicle?.features?.includes("Offline");
 		},
+		vehicleNotReachable: function () {
+			// online vehicle that was not reachable at startup
+			const features = this.vehicle?.features || [];
+			return features.includes("Offline") && features.includes("Retryable");
+		},
 		socBasedCharging: function () {
 			return this.vehicleHasSoc || this.vehicleSoc > 0;
 		},
@@ -250,9 +254,6 @@ export default {
 		},
 		pvRemaining() {
 			this.pvRemainingInterpolated = this.pvRemaining;
-		},
-		guardRemaining() {
-			this.guardRemainingInterpolated = this.guardRemaining;
 		},
 		chargeDuration() {
 			this.chargeDurationInterpolated = this.chargeDuration;
@@ -274,9 +275,6 @@ export default {
 			}
 			if (this.pvRemainingInterpolated > 0) {
 				this.pvRemainingInterpolated--;
-			}
-			if (this.guardRemainingInterpolated > 0) {
-				this.guardRemainingInterpolated--;
 			}
 			if (this.chargeDurationInterpolated > 0 && this.charging) {
 				this.chargeDurationInterpolated++;

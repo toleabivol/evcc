@@ -9,6 +9,7 @@ const (
 	GridConfigured        = "gridConfigured"
 	GridCurrents          = "gridCurrents"
 	GridEnergy            = "gridEnergy"
+	GridPower             = "gridPower"
 	GridPowers            = "gridPowers"
 	HomePower             = "homePower"
 	PrioritySoc           = "prioritySoc"
@@ -18,8 +19,6 @@ const (
 	PvPower               = "pvPower"
 	ResidualPower         = "residualPower"
 	SiteTitle             = "siteTitle"
-	SmartCostActive       = "smartCostActive"
-	SmartCostLimit        = "smartCostLimit"
 	SmartCostType         = "smartCostType"
 	Statistics            = "statistics"
 	TariffCo2             = "tariffCo2"
@@ -32,9 +31,10 @@ const (
 	Vehicles              = "vehicles"
 
 	// meters
-	BatteryMeters = "batteryMeters"
-	GridMeter     = "GridMeter"
+	GridMeter     = "gridMeter"
 	PvMeters      = "pvMeters"
+	BatteryMeters = "batteryMeters"
+	AuxMeters     = "auxMeters"
 
 	// battery settings
 	BatteryCapacity         = "batteryCapacity"

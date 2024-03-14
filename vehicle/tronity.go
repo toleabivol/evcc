@@ -152,20 +152,17 @@ func (v *Tronity) RefreshToken(_ *oauth2.Token) (*oauth2.Token, error) {
 		GrantType:    "app",
 	}
 
-	req, err := request.New(http.MethodPost, v.oc.Endpoint.TokenURL, request.MarshalJSON(data), request.JSONEncoding)
-	if err != nil {
-		return nil, err
-	}
+	req, _ := request.New(http.MethodPost, v.oc.Endpoint.TokenURL, request.MarshalJSON(data), request.JSONEncoding)
 
-	var token oauth2.Token
-	err = request.NewHelper(v.log).DoJSON(req, &token)
+	var token oauth.Token
+	err := request.NewHelper(v.log).DoJSON(req, &token)
 
-	return &token, err
+	return (*oauth2.Token)(&token), err
 }
 
 // vehicles implements the vehicles api
 func (v *Tronity) vehicles() ([]tronity.Vehicle, error) {
-	uri := fmt.Sprintf("%s/v1/vehicles", tronity.URI)
+	uri := fmt.Sprintf("%s/tronity/vehicles", tronity.URI)
 
 	var res tronity.Vehicles
 	err := v.GetJSON(uri, &res)
@@ -175,7 +172,7 @@ func (v *Tronity) vehicles() ([]tronity.Vehicle, error) {
 
 // bulk implements the bulk api
 func (v *Tronity) bulk() (tronity.Bulk, error) {
-	uri := fmt.Sprintf("%s/v1/vehicles/%s/bulk", tronity.URI, v.vid)
+	uri := fmt.Sprintf("%s/tronity/vehicles/%s/last_record", tronity.URI, v.vid)
 
 	var res tronity.Bulk
 	err := v.GetJSON(uri, &res)
@@ -193,14 +190,18 @@ func (v *Tronity) Soc() (float64, error) {
 func (v *Tronity) status() (api.ChargeStatus, error) {
 	status := api.StatusA // disconnected
 	res, err := v.bulkG()
-
-	if err == nil {
-		if res.Charging == "Charging" {
-			status = api.StatusC
-		}
+	if err != nil {
+		return status, err
 	}
 
-	return status, err
+	switch {
+	case res.Charging == "Charging":
+		status = api.StatusC
+	case res.Plugged:
+		status = api.StatusB
+	}
+
+	return status, nil
 }
 
 var _ api.VehicleRange = (*Tronity)(nil)
@@ -235,12 +236,12 @@ func (v *Tronity) post(uri string) error {
 
 // startCharge implements the api.VehicleChargeController interface
 func (v *Tronity) startCharge() error {
-	uri := fmt.Sprintf("%s/v1/vehicles/%s/charge_start", tronity.URI, v.vid)
+	uri := fmt.Sprintf("%s/tronity/vehicles/%s/start_charging", tronity.URI, v.vid)
 	return v.post(uri)
 }
 
 // stopCharge implements the api.VehicleChargeController interface
 func (v *Tronity) stopCharge() error {
-	uri := fmt.Sprintf("%s/v1/vehicles/%s/charge_stop", tronity.URI, v.vid)
+	uri := fmt.Sprintf("%s/tronity/vehicles/%s/stop_charging", tronity.URI, v.vid)
 	return v.post(uri)
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/evcc-io/evcc/core/loadpoint"
 	"github.com/evcc-io/evcc/core/site"
 	"github.com/evcc-io/evcc/server/db/settings"
+	"github.com/evcc-io/evcc/util/config"
 )
 
 var _ site.API = (*Site)(nil)
@@ -20,6 +21,24 @@ const (
 	FeedinTariff  = "feedin"
 	PlannerTariff = "planner"
 )
+
+// isConfigurable checks if the meter is configurable
+func isConfigurable(ref string) bool {
+	dev, _ := config.Meters().ByName(ref)
+	_, ok := dev.(config.ConfigurableDevice[api.Meter])
+	return ok
+}
+
+// filterConfigurable filters configurable meters
+func filterConfigurable(ref []string) []string {
+	var res []string
+	for _, r := range ref {
+		if isConfigurable(r) {
+			res = append(res, r)
+		}
+	}
+	return res
+}
 
 // GetTitle returns the title
 func (site *Site) GetTitle() string {
@@ -34,7 +53,7 @@ func (site *Site) SetTitle(title string) {
 	defer site.Unlock()
 
 	site.Title = title
-	site.publish("siteTitle", title)
+	site.publish(keys.SiteTitle, title)
 	settings.SetString(keys.Title, title)
 }
 
@@ -51,7 +70,6 @@ func (site *Site) SetGridMeterRef(ref string) {
 	defer site.Unlock()
 
 	site.Meters.GridMeterRef = ref
-	// site.publish("siteGridMeterRef", meter)
 	settings.SetString(keys.GridMeter, ref)
 }
 
@@ -68,8 +86,7 @@ func (site *Site) SetPVMeterRefs(ref []string) {
 	defer site.Unlock()
 
 	site.Meters.PVMetersRef = ref
-	// site.publish("siteGridMeterRef", meter)
-	settings.SetString(keys.PvMeters, strings.Join(ref, ","))
+	settings.SetString(keys.PvMeters, strings.Join(filterConfigurable(ref), ","))
 }
 
 // GetBatteryMeterRefs returns the BatteryMeterRef
@@ -85,8 +102,23 @@ func (site *Site) SetBatteryMeterRefs(ref []string) {
 	defer site.Unlock()
 
 	site.Meters.BatteryMetersRef = ref
-	// site.publish("siteGridMeterRef", meter)
-	settings.SetString(keys.BatteryMeters, strings.Join(ref, ","))
+	settings.SetString(keys.BatteryMeters, strings.Join(filterConfigurable(ref), ","))
+}
+
+// GetAuxMeterRefs returns the AuxMeterRef
+func (site *Site) GetAuxMeterRefs() []string {
+	site.RLock()
+	defer site.RUnlock()
+	return site.Meters.AuxMetersRef
+}
+
+// SetAuxMeterRefs sets the AuxMeterRef
+func (site *Site) SetAuxMeterRefs(ref []string) {
+	site.Lock()
+	defer site.Unlock()
+
+	site.Meters.AuxMetersRef = ref
+	settings.SetString(keys.AuxMeters, strings.Join(filterConfigurable(ref), ","))
 }
 
 // Loadpoints returns the list loadpoints
@@ -150,8 +182,8 @@ func (site *Site) SetBufferSoc(soc float64) error {
 		return ErrBatteryNotConfigured
 	}
 
-	if soc != 0 && soc <= site.prioritySoc {
-		return errors.New("buffer soc must be larger than priority soc")
+	if soc != 0 && soc < site.prioritySoc {
+		return errors.New("buffer soc must not be smaller than priority soc")
 	}
 
 	if site.bufferStartSoc != 0 && soc > site.bufferStartSoc {
@@ -185,7 +217,7 @@ func (site *Site) SetBufferStartSoc(soc float64) error {
 		return ErrBatteryNotConfigured
 	}
 
-	if soc != 0 && soc <= site.bufferSoc {
+	if soc != 0 && soc < site.bufferSoc {
 		return errors.New("buffer start soc must be larger than buffer soc")
 	}
 
@@ -217,29 +249,6 @@ func (site *Site) SetResidualPower(power float64) error {
 	if site.ResidualPower != power {
 		site.ResidualPower = power
 		site.publish(keys.ResidualPower, site.ResidualPower)
-	}
-
-	return nil
-}
-
-// GetSmartCostLimit returns the smartCostLimit
-func (site *Site) GetSmartCostLimit() float64 {
-	site.RLock()
-	defer site.RUnlock()
-	return site.smartCostLimit
-}
-
-// SetSmartCostLimit sets the smartCostLimit
-func (site *Site) SetSmartCostLimit(val float64) error {
-	site.Lock()
-	defer site.Unlock()
-
-	site.log.DEBUG.Println("set smart cost limit:", val)
-
-	if site.smartCostLimit != val {
-		site.smartCostLimit = val
-		settings.SetFloat(keys.SmartCostLimit, site.smartCostLimit)
-		site.publish(keys.SmartCostLimit, site.smartCostLimit)
 	}
 
 	return nil
@@ -295,7 +304,7 @@ func (site *Site) SetBatteryDischargeControl(val bool) error {
 	if site.GetBatteryDischargeControl() != val {
 		// reset to normal when disabling
 		if mode := site.GetBatteryMode(); !val && batteryModeModified(mode) {
-			if err := site.updateBatteryMode(api.BatteryNormal); err != nil {
+			if err := site.applyBatteryMode(api.BatteryNormal); err != nil {
 				return err
 			}
 		}

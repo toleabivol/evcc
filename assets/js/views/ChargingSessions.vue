@@ -1,9 +1,11 @@
 <template>
-	<div class="container px-4">
+	<div class="container px-4 safe-area-inset">
 		<TopHeader :title="$t('sessions.title')" />
 		<div class="row">
 			<main class="col-12">
-				<div class="d-flex align-items-baseline justify-content-between my-3 my-md-5">
+				<div
+					class="d-flex align-items-baseline justify-content-between my-3 my-md-5 month-header"
+				>
 					<router-link
 						class="d-flex text-decoration-none align-items-center"
 						:class="{ 'pe-none': !hasPrev, 'text-muted': !hasPrev }"
@@ -41,7 +43,6 @@
 									{{ $t("sessions.date") }}
 								</th>
 								<th
-									v-if="showLoadpoints"
 									scope="col"
 									class="align-top d-none d-md-table-cell"
 									data-testid="loadpoint"
@@ -61,7 +62,6 @@
 									</CustomSelect>
 								</th>
 								<th
-									v-if="showVehicles"
 									scope="col"
 									class="align-top d-none d-md-table-cell"
 									data-testid="vehicle"
@@ -81,10 +81,7 @@
 									</CustomSelect>
 								</th>
 								<th scope="col" class="align-top d-md-none text-truncate">
-									<div
-										v-if="showLoadpoints"
-										class="d-flex flex-wrap text-truncate"
-									>
+									<div class="d-flex flex-wrap text-truncate">
 										<div class="me-2 text-truncate">
 											{{ $t("sessions.loadpoint") }}
 										</div>
@@ -103,10 +100,7 @@
 											</span>
 										</CustomSelect>
 									</div>
-									<div
-										class="text-truncate"
-										:class="{ 'd-flex flex-wrap': showLoadpoints }"
-									>
+									<div class="text-truncate d-flex flex-wrap">
 										<div class="me-2 text-truncate">
 											{{ $t("sessions.vehicle") }}
 										</div>
@@ -154,16 +148,8 @@
 								<th scope="col" class="align-top ps-0">
 									{{ $t("sessions.total") }}
 								</th>
-								<th
-									v-if="showLoadpoints"
-									scope="col"
-									class="d-none d-md-table-cell"
-								></th>
-								<th
-									v-if="showVehicles"
-									scope="col"
-									class="d-none d-md-table-cell"
-								></th>
+								<th scope="col" class="d-none d-md-table-cell"></th>
+								<th scope="col" class="d-none d-md-table-cell"></th>
 								<th scope="col" class="d-md-none"></th>
 								<th
 									v-for="column in columnsPerBreakpoint"
@@ -187,14 +173,14 @@
 								<td class="ps-0">
 									{{ fmtFullDateTime(new Date(session.created), true) }}
 								</td>
-								<td v-if="showLoadpoints" class="d-none d-md-table-cell">
+								<td class="d-none d-md-table-cell">
 									{{ session.loadpoint }}
 								</td>
-								<td v-if="showVehicles" class="d-none d-md-table-cell">
+								<td class="d-none d-md-table-cell">
 									{{ session.vehicle }}
 								</td>
 								<td class="d-md-none text-truncate">
-									<div v-if="showLoadpoints">{{ session.loadpoint }}</div>
+									<div>{{ session.loadpoint }}</div>
 									<div>{{ session.vehicle }}</div>
 								</td>
 								<td
@@ -453,20 +439,6 @@ export default {
 			}
 			return null;
 		},
-		showVehicles() {
-			return this.hasMultipleVehicles || this.vehicleFilter;
-		},
-		showLoadpoints() {
-			return this.hasMultipleLoadpoints || this.loadpointFilter;
-		},
-		hasMultipleVehicles() {
-			const vehicles = this.currentSessions.map((s) => s.vehicle);
-			return new Set(vehicles).size > 1;
-		},
-		hasMultipleLoadpoints() {
-			const loadpoints = this.currentSessions.map((s) => s.loadpoint);
-			return new Set(loadpoints).size > 1;
-		},
 		pricePerKWh() {
 			const total = this.filteredSessions
 				.filter((s) => s.price !== null)
@@ -659,6 +631,21 @@ export default {
 .sticky-top,
 .sticky-bottom {
 	z-index: 1;
+}
+.sticky-top th {
+	padding-top: max(0.5rem, env(safe-area-inset-top));
+}
+.table-outer {
+	position: relative;
+	top: calc(max(0.5rem, env(safe-area-inset-top)) * -1);
+}
+.month-header {
+	position: relative;
+	z-index: 2;
+}
+.sticky-bottom th {
+	padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+	border-bottom: none;
 }
 @media (max-width: 576px) {
 	.table td,

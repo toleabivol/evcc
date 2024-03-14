@@ -42,7 +42,6 @@ import (
 	"github.com/evcc-io/evcc/util/sponsor"
 	"github.com/evcc-io/evcc/util/templates"
 	"github.com/evcc-io/evcc/vehicle"
-	"github.com/evcc-io/evcc/vehicle/wrapper"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/libp2p/zeroconf/v2"
@@ -154,6 +153,13 @@ func (c networkConfig) URI() string {
 	return fmt.Sprintf("%s://%s", c.Schema, c.HostPort())
 }
 
+func nameValid(name string) error {
+	if !nameRE.MatchString(name) {
+		return fmt.Errorf("name must not contain special characters or spaces: %s", name)
+	}
+	return nil
+}
+
 func loadConfigFile(conf *globalConfig) error {
 	err := viper.ReadInConfig()
 
@@ -185,6 +191,10 @@ func configureMeters(static []config.Named, names ...string) error {
 
 		if len(names) > 0 && !slices.Contains(names, cc.Name) {
 			continue
+		}
+
+		if err := nameValid(cc.Name); err != nil {
+			log.WARN.Printf("create meter %d: %v", i+1, err)
 		}
 
 		instance, err := meter.NewFromConfig(cc.Type, cc.Other)
@@ -235,7 +245,10 @@ func configureChargers(static []config.Named, names ...string) error {
 			continue
 		}
 
-		cc := cc
+		if err := nameValid(cc.Name); err != nil {
+			log.WARN.Printf("create charger %d: %v", i+1, err)
+		}
+
 		g.Go(func() error {
 			instance, err := charger.NewFromConfig(cc.Type, cc.Other)
 			if err != nil {
@@ -253,7 +266,6 @@ func configureChargers(static []config.Named, names ...string) error {
 	}
 
 	for _, conf := range configurable {
-		conf := conf
 		g.Go(func() error {
 			cc := conf.Named()
 
@@ -274,10 +286,6 @@ func configureChargers(static []config.Named, names ...string) error {
 }
 
 func vehicleInstance(cc config.Named) (api.Vehicle, error) {
-	if !nameRE.MatchString(cc.Name) {
-		return nil, fmt.Errorf("vehicle name must not contain special characters or spaces: %s", cc.Name)
-	}
-
 	instance, err := vehicle.NewFromConfig(cc.Type, cc.Other)
 	if err != nil {
 		var ce *util.ConfigError
@@ -287,7 +295,7 @@ func vehicleInstance(cc config.Named) (api.Vehicle, error) {
 
 		// wrap non-config vehicle errors to prevent fatals
 		log.ERROR.Printf("creating vehicle %s failed: %v", cc.Name, err)
-		instance = wrapper.New(cc.Name, cc.Other, err)
+		instance = vehicle.NewWrapper(cc.Name, cc.Type, cc.Other, err)
 	}
 
 	// ensure vehicle config has title
@@ -315,7 +323,10 @@ func configureVehicles(static []config.Named, names ...string) error {
 			continue
 		}
 
-		cc := cc
+		if err := nameValid(cc.Name); err != nil {
+			return fmt.Errorf("cannot create vehicle %d: %w", i+1, err)
+		}
+
 		g.Go(func() error {
 			instance, err := vehicleInstance(cc)
 			if err != nil {
@@ -340,7 +351,6 @@ func configureVehicles(static []config.Named, names ...string) error {
 	devs2 := make([]config.ConfigurableDevice[api.Vehicle], 0, len(configurable))
 
 	for _, conf := range configurable {
-		conf := conf
 		g.Go(func() error {
 			cc := conf.Named()
 
@@ -547,7 +557,7 @@ func configureHEMS(conf config.Typed, site *core.Site, httpd *server.HTTPd) erro
 func configureMDNS(conf networkConfig) error {
 	host := strings.TrimSuffix(conf.Host, ".local")
 
-	zc, err := zeroconf.RegisterProxy("EV Charge Controller", "_http._tcp", "local.", conf.Port, host, nil, []string{}, nil)
+	zc, err := zeroconf.RegisterProxy("evcc", "_http._tcp", "local.", conf.Port, host, nil, []string{"path=/"}, nil)
 	if err != nil {
 		return fmt.Errorf("mDNS announcement: %w", err)
 	}

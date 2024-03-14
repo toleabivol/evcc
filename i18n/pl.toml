@@ -125,17 +125,6 @@ modalUpdateNow = "Instaluj teraz"
 modalUpdateStarted = "Nowa wersja evcc uruchomi się..."
 modalUpdateStatusStart = "Instalacja rozpoczęta:"
 
-[gridSettings]
-activeHours = "{charging} z {total}"
-activeHoursLabel = "Aktywne godziny"
-co2Label = "Emisja CO₂"
-co2Limit = "Limit CO₂"
-costLimitDescription = "Umożliwia tymczasowe szybkie ładowanie w trybie solarnym."
-modalTitle = "Ładowanie z inteligentnej sieci"
-none = "nie ma"
-priceLabel = "Cena energii"
-priceLimit = "Limit ceny"
-
 [header]
 about = "O evcc"
 blog = "Blog"
@@ -217,6 +206,7 @@ solar = "Słoneczna"
 [main.loadpointSettings]
 currents = "Prąd ładowania"
 default = "domyślny"
+disclaimerHint = "Uwaga:"
 onlyForSocBasedCharging = "Opcje te są dostępne tylko dla pojazdów ze znanym poziomem naładowania."
 title = "Ustawienia {0}"
 vehicle = "Pojazd"
@@ -321,7 +311,6 @@ cleanEnergyCharging = "Ładowanie czystą energią: {co2} (ograniczenie {limit})
 climating = "Wykryto wstępne przygotowanie"
 connected = "Połączony."
 disconnected = "Rozłączony."
-guard = "Ochrona przełączania aktywna {remaining}…"
 minCharge = "Minimalne ładowanie do {soc}%."
 pvDisable = "Za mało nadwyżki. Pauza po {remaining}..."
 pvEnable = "Dostępna nadwyżka. Począwszy po {remaining}..."
@@ -426,6 +415,17 @@ light = "jasny"
 km = "km"
 label = "Jednostki"
 mi = "mile"
+
+[smartCost]
+activeHours = "{charging} z {total}"
+activeHoursLabel = "Aktywne godziny"
+co2Label = "Emisja CO₂"
+co2Limit = "Limit CO₂"
+loadpointDescription = "Umożliwia tymczasowe szybkie ładowanie w trybie solarnym."
+modalTitle = "Ładowanie z inteligentnej sieci"
+none = "nie ma"
+priceLabel = "Cena energii"
+priceLimit = "Limit ceny"
 
 [startupError]
 configFile = "Używany plik konfiguracyjny:"

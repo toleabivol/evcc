@@ -2,11 +2,13 @@
 	<Teleport to="body">
 		<div
 			:id="`loadpointSettingsModal_${id}`"
-			class="modal fade text-dark"
+			class="modal fade text-dark modal-xl"
+			ref="modal"
 			data-bs-backdrop="true"
 			tabindex="-1"
 			role="dialog"
 			aria-hidden="true"
+			data-testid="loadpoint-settings-modal"
 		>
 			<div class="modal-dialog modal-dialog-centered" role="document">
 				<div class="modal-content">
@@ -23,10 +25,15 @@
 					</div>
 					<div class="modal-body">
 						<div class="container">
-							<h4 class="d-flex align-items-center mb-3 mt-4 text-evcc">
+							<SmartCostLimit
+								v-if="isModalVisible && smartCostAvailable"
+								v-bind="smartCostLimitProps"
+								class="mt-2"
+							/>
+							<h4 class="d-flex align-items-center mb-3 mt-5 text-evcc">
 								{{ $t("main.loadpointSettings.currents") }}
 							</h4>
-							<div class="mb-3 row">
+							<div v-if="phasesOptions.length" class="mb-3 row">
 								<label
 									:for="formId('phases_0')"
 									class="col-sm-4 col-form-label pt-0"
@@ -34,7 +41,7 @@
 									{{ $t("main.loadpointSettings.phasesConfigured.label") }}
 								</label>
 								<div class="col-sm-8 pe-0">
-									<p v-if="!phases1p3p" class="mt-0 mb-2">
+									<p v-if="!chargerPhases1p3p" class="mt-0 mb-2">
 										<small>
 											{{
 												$t(
@@ -142,7 +149,10 @@
 </template>
 
 <script>
+import collector from "../mixins/collector";
 import formatter from "../mixins/formatter";
+import SmartCostLimit from "./SmartCostLimit.vue";
+import smartCostAvailable from "../utils/smartCostAvailable";
 
 const V = 230;
 
@@ -161,16 +171,23 @@ const insertSorted = (arr, num) => {
 
 export default {
 	name: "LoadpointSettingsModal",
-	mixins: [formatter],
+	mixins: [formatter, collector],
+	components: { SmartCostLimit },
 	props: {
 		id: [String, Number],
 		phasesConfigured: Number,
 		phasesActive: Number,
-		phases1p3p: Boolean,
+		chargerPhases1p3p: Boolean,
+		chargerPhysicalPhases: Number,
 		minSoc: Number,
 		maxCurrent: Number,
 		minCurrent: Number,
 		title: String,
+		smartCostLimit: Number,
+		smartCostType: String,
+		tariffGrid: Number,
+		currency: String,
+		multipleLoadpoints: Boolean,
 	},
 	emits: ["phasesconfigured-updated", "maxcurrent-updated", "mincurrent-updated"],
 	data: function () {
@@ -178,17 +195,24 @@ export default {
 			selectedMaxCurrent: this.maxCurrent,
 			selectedMinCurrent: this.minCurrent,
 			selectedPhases: this.phasesConfigured,
+			isModalVisible: false,
 		};
 	},
 	computed: {
 		phasesOptions: function () {
-			if (this.phases1p3p) {
+			if (this.chargerPhysicalPhases == 1) {
+				// known fixed phase configuration, no settings required
+				return [];
+			}
+			if (this.chargerPhases1p3p) {
+				// automatic switching
 				return [PHASES_AUTO, PHASES_3, PHASES_1];
 			}
+			// 1p or 3p possible
 			return [PHASES_3, PHASES_1];
 		},
 		maxPower: function () {
-			if (this.phases1p3p) {
+			if (this.chargerPhases1p3p) {
 				if (this.phasesConfigured === PHASES_AUTO) {
 					return this.maxPowerPhases(3);
 				}
@@ -199,7 +223,7 @@ export default {
 			return this.fmtKw(this.maxCurrent * V * this.phasesActive);
 		},
 		minPower: function () {
-			if (this.phases1p3p) {
+			if (this.chargerPhases1p3p) {
 				if (this.phasesConfigured === PHASES_AUTO) {
 					return this.minPowerPhases(1);
 				}
@@ -221,6 +245,15 @@ export default {
 			const opt2 = insertSorted(opt1, this.maxCurrent);
 			return opt2.map((value) => this.currentOption(value, value === 16));
 		},
+		smartCostLimitProps: function () {
+			return this.collectProps(SmartCostLimit);
+		},
+		loadpointId: function () {
+			return this.id;
+		},
+		smartCostAvailable() {
+			return smartCostAvailable(this.smartCostType);
+		},
 	},
 	watch: {
 		maxCurrent: function (value) {
@@ -235,6 +268,14 @@ export default {
 		minSoc: function (value) {
 			this.selectedMinSoc = value;
 		},
+	},
+	mounted() {
+		this.$refs.modal.addEventListener("show.bs.modal", this.modalVisible);
+		this.$refs.modal.addEventListener("hidden.bs.modal", this.modalInvisible);
+	},
+	unmounted() {
+		this.$refs.modal?.removeEventListener("show.bs.modal", this.modalVisible);
+		this.$refs.modal?.removeEventListener("hidden.bs.modal", this.modalInvisible);
 	},
 	methods: {
 		maxPowerPhases: function (phases) {
@@ -261,6 +302,12 @@ export default {
 				name += ` (${this.$t("main.loadpointSettings.default")})`;
 			}
 			return { value, name };
+		},
+		modalVisible: function () {
+			this.isModalVisible = true;
+		},
+		modalInvisible: function () {
+			this.isModalVisible = false;
 		},
 	},
 };

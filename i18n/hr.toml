@@ -125,17 +125,6 @@ modalUpdateNow = "Instaliraj sada"
 modalUpdateStarted = "Pokretanje nove evcc verzije …"
 modalUpdateStatusStart = "Instalacija je pokrenuta:"
 
-[gridSettings]
-activeHours = "{charging} od {total}"
-activeHoursLabel = "Aktivno radno vrijeme"
-co2Label = "Co₂ emisija"
-co2Limit = "Ograničenje CO₂"
-costLimitDescription = "Omogućuje privremeno brzo punjenje u solarnom modusu."
-modalTitle = "Smart Grid napajanje"
-none = "bez"
-priceLabel = "Cijena energije"
-priceLimit = "Ograničenje cijene"
-
 [header]
 about = "O"
 blog = "Blog"
@@ -218,6 +207,7 @@ solar = "Solarno"
 [main.loadpointSettings]
 currents = "Struja napajanja"
 default = "zadano"
+disclaimerHint = "Bilješka:"
 onlyForSocBasedCharging = "Ove su opcije dostupne samo za vozila s poznatom razinom napunjenosti."
 title = "Postavke {0}"
 vehicle = "Vozilo"
@@ -322,7 +312,6 @@ cleanEnergyCharging = "Napajanje čistom energijom: {co2} (ograničenje {limit})
 climating = "Otkriveno predkondicioniranje."
 connected = "Povezano."
 disconnected = "Nepovezano."
-guard = "Promjena zaštite aktivna za {remaining}."
 minCharge = "Minimalno napajanje do {soc} %."
 pvDisable = "Nema dovoljno viška. Zaustavlja se za {remaining} …"
 pvEnable = "Dostupan je višak. Počinje za {remaining} …"
@@ -427,6 +416,17 @@ light = "svijetli"
 km = "km"
 label = "Jedinice"
 mi = "milje"
+
+[smartCost]
+activeHours = "{charging} od {total}"
+activeHoursLabel = "Aktivno radno vrijeme"
+co2Label = "Co₂ emisija"
+co2Limit = "Ograničenje CO₂"
+loadpointDescription = "Omogućuje privremeno brzo punjenje u solarnom modusu."
+modalTitle = "Smart Grid napajanje"
+none = "bez"
+priceLabel = "Cijena energije"
+priceLimit = "Ograničenje cijene"
 
 [startupError]
 configFile = "Korištena konfiguracijska datoteka:"

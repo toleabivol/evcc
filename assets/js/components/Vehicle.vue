@@ -20,7 +20,7 @@
 				class="flex-grow-1"
 				:label="vehicleSocTitle"
 				:value="formattedSoc"
-				:extraValue="range ? `${fmtNumber(range, 0)} ${rangeUnit}` : null"
+				:extraValue="range ? `${fmtNumber(range, 0)} ${rangeUnit}` : ''"
 				data-testid="current-soc"
 				align="start"
 			/>
@@ -29,7 +29,7 @@
 				class="flex-grow-1"
 				:label="$t('main.loadpoint.charged')"
 				:value="fmtEnergy(chargedEnergy)"
-				:extraValue="chargedSoc"
+				:extraValue="chargedSoc || ''"
 				data-testid="current-energy"
 				align="start"
 			/>
@@ -95,8 +95,6 @@ export default {
 		effectivePlanSoc: Number,
 		effectivePlanTime: String,
 		enabled: Boolean,
-		guardAction: String,
-		guardRemainingInterpolated: Number,
 		heating: Boolean,
 		id: [String, Number],
 		integratedDevice: Boolean,
@@ -125,6 +123,7 @@ export default {
 		vehicles: Array,
 		vehicleSoc: Number,
 		vehicleTargetSoc: Number,
+		vehicleNotReachable: Boolean,
 	},
 	emits: ["limit-soc-updated", "limit-energy-updated", "change-vehicle", "remove-vehicle"],
 	data() {

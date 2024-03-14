@@ -395,11 +395,12 @@ func (lp *Loadpoint) GetMaxPower() float64 {
 	return Voltage * lp.effectiveMaxCurrent() * float64(lp.maxActivePhases())
 }
 
-// GetPlanActive returns the active state of the planner
-func (lp *Loadpoint) GetPlanActive() bool {
-	lp.Lock()
-	defer lp.Unlock()
-	return lp.planActive
+// IsFastChargingActive indicates if fast charging with maximum power is active
+func (lp *Loadpoint) IsFastChargingActive() bool {
+	lp.RLock()
+	defer lp.RUnlock()
+
+	return lp.mode == api.ModeNow || lp.planActive || lp.minSocNotReached()
 }
 
 // GetRemainingDuration is the estimated remaining charging duration
@@ -475,4 +476,25 @@ func (lp *Loadpoint) StartVehicleDetection() {
 
 	// start auto-detect
 	lp.startVehicleDetection()
+}
+
+// GetSmartCostLimit gets the smart cost limit
+func (lp *Loadpoint) GetSmartCostLimit() float64 {
+	lp.RLock()
+	defer lp.RUnlock()
+	return lp.smartCostLimit
+}
+
+// SetSmartCostLimit sets the smart cost limit
+func (lp *Loadpoint) SetSmartCostLimit(val float64) {
+	lp.Lock()
+	defer lp.Unlock()
+
+	lp.log.DEBUG.Println("set smart cost limit:", val)
+
+	if lp.smartCostLimit != val {
+		lp.smartCostLimit = val
+		lp.settings.SetFloat(keys.SmartCostLimit, lp.smartCostLimit)
+		lp.publish(keys.SmartCostLimit, lp.smartCostLimit)
+	}
 }
