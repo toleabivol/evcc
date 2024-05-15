@@ -81,7 +81,8 @@ func (t *Pun) run(done chan error) {
 	var once sync.Once
 	bo := newBackoff()
 
-	for ; true; <-time.Tick(time.Hour) {
+	tick := time.NewTicker(time.Hour)
+	for ; true; <-tick.C {
 		var today api.Rates
 		if err := backoff.Retry(func() error {
 			var err error
@@ -96,21 +97,18 @@ func (t *Pun) run(done chan error) {
 			continue
 		}
 
-		var tomorrow api.Rates
-		if err := backoff.Retry(func() error {
-			var err error
-
-			tomorrow, err = t.getData(time.Now().AddDate(0, 0, 1))
-
-			return err
-		}, bo); err != nil {
+		res, err := backoff.RetryWithData(func() (api.Rates, error) {
+			res, err := t.getData(time.Now().AddDate(0, 0, 1))
+			return res, backoffPermanentError(err)
+		}, bo)
+		if err != nil {
 			once.Do(func() { done <- err })
 			t.log.ERROR.Println(err)
 			continue
 		}
 
-		//merge today and tomorrow data
-		data := append(today, tomorrow...)
+		// merge today and tomorrow data
+		data := append(today, res...)
 		t.data.Set(data)
 
 		once.Do(func() { close(done) })

@@ -2,7 +2,6 @@ package tariff
 
 import (
 	"errors"
-	"net/http"
 	"slices"
 	"sync"
 	"time"
@@ -75,14 +74,11 @@ func (t *Ngeso) run(done chan error) {
 	}
 
 	// Data updated by ESO every half hour, but we only need data every hour to stay current.
-	for ; true; <-time.Tick(time.Hour) {
+	tick := time.NewTicker(time.Hour)
+	for ; true; <-tick.C {
 		res, err := backoff.RetryWithData(func() (ngeso.CarbonForecastResponse, error) {
 			res, err := tReq.DoRequest(client)
-			var se request.StatusError
-			if errors.As(err, &se) && se.HasStatus(http.StatusBadRequest) {
-				return nil, backoff.Permanent(se)
-			}
-			return res, err
+			return res, backoffPermanentError(err)
 		}, bo)
 		if err != nil {
 			once.Do(func() { done <- err })

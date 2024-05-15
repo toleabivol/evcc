@@ -116,7 +116,8 @@ func NewMennekesCompact(uri, device, comset string, baudrate int, proto modbus.P
 }
 
 func (wb *MennekesCompact) heartbeat(timeout time.Duration) {
-	for range time.Tick(timeout) {
+	tick := time.NewTicker(timeout)
+	for ; true; <-tick.C {
 		if _, err := wb.conn.WriteSingleRegister(mennekesRegHeartbeat, mennekesHeartbeatToken); err != nil {
 			wb.log.ERROR.Println("heartbeat:", err)
 		}
@@ -247,8 +248,8 @@ func (wb *MennekesCompact) ChargedEnergy() (float64, error) {
 
 var _ api.ChargeTimer = (*MennekesCompact)(nil)
 
-// ChargingTime implements the api.ChargeTimer interface
-func (wb *MennekesCompact) ChargingTime() (time.Duration, error) {
+// ChargeDuration implements the api.ChargeTimer interface
+func (wb *MennekesCompact) ChargeDuration() (time.Duration, error) {
 	b, err := wb.conn.ReadHoldingRegisters(mennekesRegDurationSession, 2)
 	if err != nil {
 		return 0, err

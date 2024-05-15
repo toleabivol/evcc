@@ -1,9 +1,7 @@
 package tariff
 
 import (
-	"errors"
 	"fmt"
-	"net/http"
 	"slices"
 	"sync"
 	"time"
@@ -44,7 +42,8 @@ func (t *GroupeE) run(done chan error) {
 	bo := newBackoff()
 	client := request.NewHelper(t.log)
 
-	for ; true; <-time.Tick(time.Hour) {
+	tick := time.NewTicker(time.Hour)
+	for ; true; <-tick.C {
 		var res []struct {
 			StartTimestamp time.Time `json:"start_timestamp"`
 			EndTimestamp   time.Time `json:"end_timestamp"`
@@ -55,12 +54,7 @@ func (t *GroupeE) run(done chan error) {
 		uri := fmt.Sprintf("https://api.tariffs.groupe-e.ch/v1/tariffs?start_timestamp=%s&end_timestamp=%s", start.Format(time.RFC3339), start.Add(48*time.Hour).Format(time.RFC3339))
 
 		if err := backoff.Retry(func() error {
-			err := client.GetJSON(uri, &res)
-			var se request.StatusError
-			if errors.As(err, &se) && se.HasStatus(http.StatusBadRequest) {
-				return backoff.Permanent(se)
-			}
-			return err
+			return backoffPermanentError(client.GetJSON(uri, &res))
 		}, bo); err != nil {
 			once.Do(func() { done <- err })
 

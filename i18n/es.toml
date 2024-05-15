@@ -13,10 +13,11 @@ legendTitle = "¿Cómo debería usarse la energía solar?"
 legendTopAutostart = "inicio automático"
 legendTopName = "carga soportada por bateria"
 legendTopSubline = "sin interrupciones"
-modalTitle = "Ajustes de la batería"
+modalTitle = "Batería doméstica"
 
 [batterySettings.bufferStart]
-full = "cuando está casi llena"
+above = "cuando esté por encima de {soc}"
+full = "si está en {soc}"
 low = "cuando está algo llena"
 medium = "cuando está medio llena"
 never = "cuando hay suficiente excedente"
@@ -31,7 +32,7 @@ titleEdit = "Editar el medidor de batería"
 capacity = "Capacidad"
 chargeStatus = "Estado"
 chargedEnergy = "Cargado"
-current = "Actual"
+current = "Corriente "
 enabled = "Activado"
 energy = "Energía"
 odometer = "Cuentakilómetros"
@@ -46,6 +47,10 @@ socLimit = "Límite"
 [config.form]
 example = "Ejemplo"
 optional = "opcional"
+
+[config.general]
+cancel = "Cancelar"
+save = "Guardar"
 
 [config.grid]
 titleAdd = "Añadir medidor de cuadrícula"
@@ -69,13 +74,40 @@ template = "Fabricante"
 titleChoice = "¿Qué quieres añadir?"
 validateSave = "Validar y guardar"
 
+[config.options]
+
+[config.options.endianness]
+big = "big endian"
+little = "little endian"
+
+[config.options.schema]
+http = "HTTP (sin cifrar)"
+https = "HTTPS (cifrado)"
+
 [config.pv]
 titleAdd = "Añadir contador solar"
 titleEdit = "Editar contador solar"
 
+[config.section]
+general = "General"
+system = "Sistema"
+
 [config.site]
 cancel = "Cancelar"
 save = "Guardar"
+
+[config.system]
+logs = "Registros"
+restart = "Reiniciar"
+restartRequiredDescription = "Por favor, reinicie para aplicar los cambios"
+restartRequiredMessage = "La configuración cambió"
+restartingDescription = "Espere por favor…"
+restartingMessage = "Reiniciando evcc"
+
+[config.title]
+description = "Se muestra en la pantalla principal y en la pestaña del navegador"
+label = "Título"
+title = "Editar título"
 
 [config.validation]
 failed = "fallido"
@@ -174,6 +206,8 @@ blog = "Blog"
 docs = "Documentación"
 github = "GitHub"
 login = "Registro de vehículos"
+logout = "Cerrar sesión"
+nativeSettings = "Cambiar el servidor"
 needHelp = "¿Necesitas ayuda?"
 sessions = "Sesiones de carga"
 settings = "Ajustes"
@@ -188,6 +222,8 @@ discussionsButton = "Debates en GitHub"
 documentationButton = "Documentación"
 issueButton = "Reportar un error"
 issueDescription = "¿Encontraste un comportamiento extraño o incorrecto?"
+logsButton = "Ver los registros"
+logsDescription = "Compruebe los registros en busca de errores"
 modalTitle = "¿Necesitas ayuda?"
 primaryActions = "Si algo no funciona como debería, puedes obtener ayuda aqui."
 restartButton = "Reiniciar"
@@ -200,6 +236,26 @@ confirm = "¡Sí, reinicia!"
 description = "En circunstancias normales no debería ser necesario reiniciar. Por favor, considera la posibilidad de presentar un error si necesita reiniciar evcc de forma regular."
 disclaimer = "Nota: evcc terminará y dependerá del sistema operativo para reiniciar el servicio"
 modalTitle = "¿Seguro que quieres volver a empezar?"
+
+[log]
+areaLabel = "Filtrar por zona"
+areas = "Todas las areas"
+download = "Descargar registro completo"
+levelLabel = "Filtrar por nivel de registro"
+noResults = "No hay entradas en el registro coincidentes"
+search = "Buscar"
+showAll = "Mostrar todas las entradas"
+title = "Registros"
+update = "Actualización automática"
+
+[loginModal]
+cancel = "Cancelar"
+error = "Error en el inicio de sesion: "
+invalid = "La contraseña no es válida."
+login = "Registro"
+password = "Contraseña"
+reset = "¿Restablecer la contraseña?"
+title = "Autenticación"
 
 [main]
 vehicles = "Estacionamiento"
@@ -217,6 +273,7 @@ time = "Tiempo"
 title = "Plan"
 titleMinSoc = "Carga mínima"
 titleTargetCharge = "Partida"
+unsavedChanges = "Hay cambios sin guardar. ¿Aplicar ahora?"
 update = "Aplicar"
 
 [main.energyflow]
@@ -257,6 +314,8 @@ currents = "Corriente de carga"
 default = "defecto"
 disclaimerHint = "Nota:"
 onlyForSocBasedCharging = "Estas opciones sólo están disponibles para vehículos con nivel de carga conocido"
+smartCostCheap = "Carga barata desde la red"
+smartCostClean = "Carga desde una red ecológica"
 title = "Configuraciones {0}"
 vehicle = "Vehículo"
 
@@ -344,6 +403,7 @@ detectionActive = "Reconociendo vehículo ..."
 fallbackName = "Vehículo"
 moreActions = "Más acciones"
 none = "Ningún vehículo"
+notReachable = "No se pudo acceder al vehículo. Intente reiniciar evcc"
 targetSoc = "Objetivo de carga"
 temp = "T.ª"
 tempLimit = "Temperatura límite"
@@ -355,7 +415,7 @@ charging = "cargando"
 connected = "conectado"
 disconnected = "desconectado"
 ready = "preparado"
-vehicleTarget = "límite de vehículo: {soc}%"
+vehicleLimit = "límite de vehículo: {soc}%"
 
 [main.vehicleStatus]
 charging = "Cargando ..."
@@ -369,20 +429,34 @@ pvDisable = "Excedente insuficiente. Pausa en {remaining}..."
 pvEnable = "Excedente disponibile. Empezar en {remaining}..."
 scale1p = "Reduciendo a carga monofásica en {remaining}..."
 scale3p = "Aumentando a carga trifásica en {remaining}..."
-targetChargeActive = "Carga objetivo activa..."
-targetChargePlanned = "La carga objetivo empieza en {time}."
-targetChargeWaitForVehicle = "Carga de destino lista. Esperar vehículo."
+targetChargeActive = "Plan de carga activo..."
+targetChargePlanned = "El plan de carga comienza a las {time}"
+targetChargeWaitForVehicle = "Plan de carga listo. Esperando vehículo..."
 unknown = ""
-vehicleTargetReached = "Límite de vehículo {soc}% alcanzado."
+vehicleLimitReached = "Límite de vehículo {soc}% alcanzado."
 waitForVehicle = "Listo para cargar. Esperando vehículo."
 
 [notifications]
 dismissAll = "Eliminar notificaciones"
+logs = "Ver registros completos"
 modalTitle = "Notificaciónes"
 
 [offline]
 message = "No conectado con servidor."
 reload = "Actualizar?"
+
+[passwordModal]
+description = "Establezca una contraseña para proteger la configuración. La vista principal permanece accesible sin iniciar sesión"
+empty = "La contraseña no debe estar vacía"
+error = "Error: "
+labelCurrent = "Contraseña actual"
+labelNew = "Nueva contraseña"
+labelRepeat = "Repita la contraseña"
+newPassword = "Crear contraseña"
+noMatch = "Las contraseñas no coinciden"
+titleNew = "Establecer contraseña de administrador"
+titleUpdate = "Cambiar contraseña de administrador"
+updatePassword = "Cambiar la contraseña"
 
 [session]
 cancel = "Cancelar"
@@ -434,7 +508,12 @@ allVehicles = "todos los vehiculos"
 filter = "Filtrar"
 
 [settings]
-title = "Ajustes generales"
+title = "Interfaz de usuario"
+
+[settings.fullscreen]
+enter = "Iniciar a pantalla completa"
+exit = "Salir de la pantalla completa"
+label = "Pantalla completa"
 
 [settings.gridDetails]
 co2 = "CO₂"
@@ -472,6 +551,10 @@ mi = "millas"
 [smartCost]
 activeHours = "{charging} de {total}"
 activeHoursLabel = "Horas funcionando"
+applyToAll = "¿Aplicar en todas partes?"
+batteryDescription = "Carga la batería doméstica con la red eléctrica"
+cheapTitle = "Carga barata desde la red"
+cleanTitle = "Carga desde una red ecológica"
 co2Label = "Emisiones de CO₂"
 co2Limit = "Límite de CO₂"
 loadpointDescription = "Habilita temporalmente la carga rápida en modo solar"
@@ -479,6 +562,7 @@ modalTitle = "Red inteligente de carga"
 none = "ninguno"
 priceLabel = "Precio de la energía"
 priceLimit = "Límite de precio"
+saved = "Guardado."
 
 [startupError]
 configFile = "Archivo de configuración utilizado:"

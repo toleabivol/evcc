@@ -1,7 +1,7 @@
 <template>
 	<div class="d-flex flex-column site safe-area-inset">
 		<div class="container px-4 top-area">
-			<div class="d-flex justify-content-between align-items-center mb-2">
+			<div class="d-flex justify-content-between align-items-center my-3 my-md-4">
 				<h1 class="d-block my-0">
 					{{ siteTitle || "evcc" }}
 				</h1>
@@ -21,9 +21,7 @@
 				class="mt-1 mt-sm-2 flex-grow-1"
 				:loadpoints="loadpoints"
 				:vehicles="vehicleList"
-				:smartCostLimit="smartCostLimit"
 				:smartCostType="smartCostType"
-				:smartCostActive="smartCostActive"
 				:tariffGrid="tariffGrid"
 				:tariffCo2="tariffCo2"
 				:currency="currency"
@@ -63,10 +61,8 @@ export default {
 		gridConfigured: Boolean,
 		gridPower: Number,
 		homePower: Number,
-		pvConfigured: Boolean,
 		pvPower: Number,
 		pv: Array,
-		batteryConfigured: Boolean,
 		batteryPower: Number,
 		batterySoc: Number,
 		batteryDischargeControl: Boolean,
@@ -99,11 +95,16 @@ export default {
 		uploadProgress: Number,
 		sponsor: String,
 		sponsorTokenExpires: Number,
-		smartCostLimit: Number,
 		smartCostType: String,
 		smartCostActive: Boolean,
 	},
 	computed: {
+		batteryConfigured: function () {
+			return this.battery?.length > 0;
+		},
+		pvConfigured: function () {
+			return this.pv?.length > 0;
+		},
 		energyflow: function () {
 			return this.collectProps(Energyflow);
 		},
